@@ -4,7 +4,7 @@
 
 ## Usage
 
-    (require [clj-common-exec :as exec])
+    (require [clj-commons-exec :as exec])
 
     (exec/sh "echo" "hello")   ; A promise is returned immediately.
     ;=> #<core$promise$reify__5727@12fa6824: :pending>
