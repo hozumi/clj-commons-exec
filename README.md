@@ -25,7 +25,7 @@ options
 * **:env** *(Map)* The environment for the new process. If null, the environment of the current process is used.
 - **:add-env** *(Map)* The added environment for the new process.
 * **:as-success** *(int)* is regarded as sucess exit value.
-* **:as-successes** *(sequence)* are regarded as sucess exit value.
+* **:as-successes** *(sequence)* are regarded as sucess exit values.
 * **:result-handler-fn** *(function)* A function, which will be called with promiss, in, out, err and option map, create an instance of org.apache.commons.exec.ExecuteResultHandler. You should close in, out, and err stream manually.
 
 ## Installation
