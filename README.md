@@ -26,7 +26,7 @@ options
 - **:add-env** *(Map)* The added environment for the new process.
 * **:as-success** *(int)* is regarded as sucess exit value.
 * **:as-successes** *(sequence)* are regarded as sucess exit values.
-* **:result-handler-fn** *(function)* A function, which will be called with promiss, in, out, err and option map, create an instance of org.apache.commons.exec.ExecuteResultHandler. You should close in, out, and err stream manually.
+* **:result-handler-fn** *(function)* A function, which will be called with promiss, in, out, err and option map, returns an instance which implements org.apache.commons.exec.ExecuteResultHandler. You have to close in, out, and err stream when sub-process is finished.
 
 ## Installation
 Leiningen [org.clojars.hozumi/clj-commons-exec "1.0.0-SNAPSHOT"]
