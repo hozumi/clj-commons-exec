@@ -27,7 +27,7 @@ option
 *:result-handler-fn* **(function)** A function, which will be called with promiss, in, out, err and option map, create an instance of org.apache.commons.exec.ExecuteResultHandler. You should close in, out, and err stream manually.
 
 ## Installation
-Leiningen [org.clojars.hozumi/clj-common-exec "1.0.0"]
+Leiningen [org.clojars.hozumi/clj-commons-exec "1.0.0-SNAPSHOT"]
 
 ## License
 
