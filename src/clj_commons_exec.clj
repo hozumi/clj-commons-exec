@@ -64,7 +64,9 @@
              :err (convert-baos-into-x err (:encode opts))
              :fail e})))
 
-;; port from http://svn.apache.org/viewvc/commons/proper/exec/tags/EXEC_1_1/src/main/java/org/apache/commons/exec/PumpStreamHandler.java?view=markup
+;; PumpStreamHandler flushes input stream only when input stream is System/in.
+;; http://stackoverflow.com/questions/7113007/trouble-providing-multiple-input-to-a-command-using-apache-commons-exec-and-extr
+;; ported from http://svn.apache.org/viewvc/commons/proper/exec/tags/EXEC_1_1/src/main/java/org/apache/commons/exec/PumpStreamHandler.java?view=markup
 ;; and add flush-input? option.
 (defn flush-pump-stream-handler [out err in flush-input?]
   (let [threads (atom [])
