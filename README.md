@@ -20,7 +20,7 @@ options
 * **:dir** *(String or java.io.File)* override the process dir.
 * **:in** *(String or InputStream)* is fed to the sub-process's stdin.
 * **:out** *(OutputStream)* is used as the sub-process's stdout.
-* **:flush-input? *(boolean)* flush or not input stream.
+* **:flush-input?** *(boolean)* flush or not input stream.
 * **:err** *(OutputStream)* is used as the sub-process's stderror.
 * **:watchdog** *(int)* set watchdog timer in ms.
 * **:env** *(Map)* The environment for the new process. If null, the environment of the current process is used.
