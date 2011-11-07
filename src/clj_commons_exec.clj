@@ -1,20 +1,25 @@
 (ns clj-commons-exec
   (:require [clojure.java.io :as javaio :only [file]])
   (:use [clojure.test])
-  (:import [java.io ByteArrayOutputStream
+  (:import [java.io
+            ByteArrayOutputStream
             ByteArrayInputStream
-            InputStream OutputStream]
+            InputStream
+            OutputStream
+            IOException]
            [org.apache.commons.exec
             CommandLine
             DefaultExecutor
             DefaultExecuteResultHandler
-            ExecuteException
             ExecuteResultHandler
             ExecuteWatchdog
-            PumpStreamHandler
+            ExecuteStreamHandler
+            StreamPumper
+            InputStreamPumper
             ShutdownHookProcessDestroyer
             Watchdog]
-           [org.apache.commons.exec.environment EnvironmentUtils]))
+           [org.apache.commons.exec.environment
+            EnvironmentUtils]))
 
 (defn parse-args [args]
   (split-with string? args))
@@ -59,6 +64,45 @@
              :err (convert-baos-into-x err (:encode opts))
              :fail e})))
 
+;; port from http://svn.apache.org/viewvc/commons/proper/exec/tags/EXEC_1_1/src/main/java/org/apache/commons/exec/PumpStreamHandler.java?view=markup
+;; and add flush-input? option.
+(defn flush-pump-stream-handler [out err in flush-input?]
+  (let [threads (atom [])
+        isp (atom nil)]
+    (reify
+     ExecuteStreamHandler
+     (setProcessOutputStream
+      [_ is] ;;InputStream
+      (when out
+        (let [t (Thread. (StreamPumper. is out))]
+          (swap! threads conj t)
+          (.setDaemon t true))))
+     (setProcessErrorStream
+      [_ is] ;;InputStream
+      (when err
+        (let [t (Thread. (StreamPumper. is err))]
+          (swap! threads conj t)
+          (.setDaemon t true))))
+     (setProcessInputStream
+      [_ os] ;;OutputStream
+      (if in
+        (let [pumper (if flush-input?
+                       (reset! isp (InputStreamPumper. in os))
+                       (StreamPumper. in os))
+              t (Thread. pumper)]
+          (swap! threads conj t)
+          (.setDaemon t true))
+        (try (.close os)
+             (catch IOException e))))
+     (start [_]
+            (doseq [t @threads] (.start t)))
+     (stop [_]
+           (when @isp
+             (.stopProcessing @isp))
+           (doseq [t @threads]
+             (try (.join t)
+                  (catch InterruptedException _)))))))
+
 (defn string->input-stream [^String s ^String encode]
   (ByteArrayInputStream. (.getBytes s (or encode (System/getProperty "file.encoding")))))
 
@@ -74,7 +118,7 @@
         ^ExecuteResultHandler result-handler
         ((or (:result-handler-fn opts) ->DefaultResultHandler) result in out err opts)
 
-        stream-handler (PumpStreamHandler. out err in)
+        stream-handler (flush-pump-stream-handler out err in (:flush-input? opts))
         executor (DefaultExecutor.)]
     (doseq [arg args]
       (.addArgument command arg))
