@@ -130,7 +130,7 @@
       (.setExitValues executor (into-array Integer/TYPE successes)))
     (when-let [ms (:watchdog opts)]
       (.setWatchdog executor (ExecuteWatchdog. ms)))
-    (when-not (:no-process-destroyer opts)
+    (when (:shutdown opts)
       (.setProcessDestroyer executor (ShutdownHookProcessDestroyer.)))
     (.setStreamHandler executor stream-handler)
     (if-let [env (:env opts)]
