@@ -3,17 +3,17 @@
 [Apache Commons Exec](http://commons.apache.org/exec/) wrapper for Clojure
 
 ## Usage
+```clojure
+(require '[clj-commons-exec :as exec])
 
-    (require '[clj-commons-exec :as exec])
+(exec/sh "echo" "hello")   ; A promise is returned immediately.
+;=> #<core$promise$reify__5727@12fa6824: :pending>
 
-    (exec/sh "echo" "hello")   ; A promise is returned immediately.
-    ;=> #<core$promise$reify__5727@12fa6824: :pending>
+@(exec/sh "echo" "hello")  ; To get a result, deref it.
+;=> {:exit 0, :out "hello\n", :err nil}
 
-    @(exec/sh "echo" "hello")  ; To get a result, deref it.
-    ;=> {:exit 0, :out "hello\n", :err nil}
-
-    (exec/sh "ls" "-l" {:dir "/"}) ; Last argument can be recognized as an option map.
-
+(exec/sh "ls" "-l" {:dir "/"}) ; Last argument can be recognized as an option map.
+```
 
 options
 
