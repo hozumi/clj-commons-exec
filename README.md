@@ -62,7 +62,7 @@ If you want to have multiple processes piped to each other and/or custom input (
 ;=> {:exit 0, :out "      4       9      44\n", :err ""}
 
 ```
-Note: currently, when using **run**, you will need to handler your own watchdog timeout functionality and catch any Exceptions generated from any problems in your commands or execution. Support for an execution options map like in **sh** is not currently implemented.
+Note: currently, when using **run**, you will need to handle your own watchdog timeout functionality and catch any Exceptions generated from any problems in your commands or execution. Support for an execution options map like in **sh** is not currently implemented.
 ## Installation
 Leiningen [org.clojars.hozumi/clj-commons-exec "1.0.0-SNAPSHOT"]
 
