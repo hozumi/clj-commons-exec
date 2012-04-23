@@ -227,7 +227,7 @@
                           (assoc-in [(dec num-cmds) 1] last-error))
           execs (for [cmd-streams all-streams]
                   (doto (DefaultExecutor.) (.setStreamHandler (apply #(PumpStreamHandler. %1 %2 %3) cmd-streams))))
-          butlast-thread-fns (map (fn [exec cmd] (fn [] (.execute exec cmd))) execs cmds)
+          butlast-thread-fns (map (fn [exec cmd] (fn [] (.execute exec cmd))) (butlast execs) (butlast cmds))
           last-thread-fn (fn [] (deliver result
                                         (future (do
                                                   (let [exit-code (.execute (last execs) (last cmds))]
