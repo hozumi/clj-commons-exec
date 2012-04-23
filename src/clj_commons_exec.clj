@@ -27,6 +27,9 @@
 (defn parse-args [args]
   (split-with string? args))
 
+(defn parse-args-pipe [args]
+  (split-with sequential? args))
+
 (deftest parse-args-test
   (is (= [["ls" "-l"] {:dir "foo"}]
            (parse-args ["ls" "-l" {:dir "foo"}])))
@@ -115,7 +118,7 @@
   (let [[[^String comm & args] [opts]] (parse-args args-and-opts)
         command (CommandLine. comm)
         in  (when-let [i (:in opts)]
-              (if (string? i) (string->input-stream i (:encode opts)) i))
+              (if (string? i) (string->input-stream (str i \newline) (:encode opts)) i))
         out (or (:out opts) (ByteArrayOutputStream.))
         err (or (:err opts) (ByteArrayOutputStream.))
         result (promise)
@@ -124,6 +127,7 @@
         ((or (:result-handler-fn opts) ->DefaultResultHandler) result in out err opts)
 
         stream-handler (flush-pump-stream-handler out err in (:flush-input? opts))
+        stream-handler (PumpStreamHandler. out err in)
         executor (DefaultExecutor.)]
     (doseq [arg args]
       (.addArgument command arg))
@@ -241,3 +245,39 @@
       (doseq [t threads]
         (.start t)))
     @result))
+
+(defn sh-pipe [& args-and-opts]
+  (let [[cmds-list [opts]] (parse-args-pipe args-and-opts)
+        in  (when-let [i (:in opts)]
+              (if (string? i) (string->input-stream (str i \newline) (:encode opts)) i))
+        out (or (:out opts) (ByteArrayOutputStream.))
+        err (or (:err opts) (ByteArrayOutputStream.))
+        num-cmds (count cmds-list)
+        nil-streams (into []
+                          (for [_ (range num-cmds)]
+                            [nil nil nil]))
+        pipe-streams (loop [streams nil-streams
+                            i 0]
+                       (if (>= i (dec num-cmds))
+                         streams
+                         (let [pos (java.io.PipedOutputStream.)
+                               pis (java.io.PipedInputStream. pos)
+                               new-streams (-> streams
+                                               (assoc-in [i 0] pos)
+                                               (assoc-in [(inc i) 2] pis))]
+                           (recur new-streams (inc i)))))
+        all-streams (-> pipe-streams
+                        (assoc-in [0 2] in)
+                        (assoc-in [(dec num-cmds) 0] out)
+                        (assoc-in [(dec num-cmds) 1] err))
+        exec-fn (fn [cmd-and-args [cmd-out cmd-err cmd-in]]
+                  (let [new-opts (-> opts
+                                     (assoc :out cmd-out)
+                                     (assoc :err cmd-err)
+                                     (assoc :in cmd-in))
+                        sh-fn-args (concat cmd-and-args [new-opts])]
+                    (apply sh sh-fn-args)))
+        ]
+    (last (doall
+           (map exec-fn cmds-list all-streams)))
+    ))
