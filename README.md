@@ -38,8 +38,21 @@ If you want to have multiple processes piped to each other and/or custom input (
 (def result (exec/run [["ls" "-lart" "/usr"]]))
 (future-done? result)
 ;=> true
-@result
-{:exit 0, :out "total 244\ndrwxr-xr-x  10 root root  4096 2011-10-12 07:26 local\ndrwxr-xr-x  11 root root  4096 2011-10-28 17:52 .\ndrwxr-xr-x   2 root root  4096 2012-02-16 11:44 games\ndrwxr-xr-x  41 root root 20480 2012-04-07 19:23 include\ndrwxr-xr-x 379 root root 12288 2012-04-07 19:25 share\ndrwxr-xr-x  11 root root  4096 2012-04-12 02:53 src\ndrwxr-xr-x  26 root root  4096 2012-04-12 02:53 ..\ndrwxr-xr-x  37 root root 36864 2012-04-12 04:06 lib32\ndrwxr-xr-x   2 root root 12288 2012-04-16 09:01 sbin\ndrwxr-xr-x 267 root root 65536 2012-04-18 20:59 lib\ndrwxr-xr-x   2 root root 69632 2012-04-18 21:01 bin\n", :err ""}
+(println (:out @result))
+; total 244
+; drwxr-xr-x  10 root root  4096 2011-10-12 07:26 local
+; drwxr-xr-x  11 root root  4096 2011-10-28 17:52 .
+; drwxr-xr-x   2 root root  4096 2012-02-16 11:44 games
+; drwxr-xr-x  41 root root 20480 2012-04-07 19:23 include
+; drwxr-xr-x 379 root root 12288 2012-04-07 19:25 share
+; drwxr-xr-x  11 root root  4096 2012-04-12 02:53 src
+; drwxr-xr-x  26 root root  4096 2012-04-12 02:53 ..
+; drwxr-xr-x  37 root root 36864 2012-04-12 04:06 lib32
+; drwxr-xr-x   2 root root 12288 2012-04-16 09:01 sbin
+; drwxr-xr-x 267 root root 65536 2012-04-18 20:59 lib
+; drwxr-xr-x   2 root root 69632 2012-04-18 21:01 bin
+; 
+;=> nil
 @(exec/run [["ls" "-lart" "/usr"] ["wc"]])
 ;=> {:exit 0, :out "     12      90     592\n", :err ""}
 @(exec/run [["ls" "-lart" "/usr"] ["wc"] ["wc"]])
