@@ -3,16 +3,17 @@
 [Apache Commons Exec](http://commons.apache.org/exec/) wrapper for Clojure
 
 ## Usage
+
 ```clojure
 (require '[clj-commons-exec :as exec])
 
-(exec/sh "echo" "hello")   ; A promise is returned immediately.
+(exec/sh ["echo" "hello"])   ; A promise is returned immediately.
 ;=> #<core$promise$reify__5727@12fa6824: :pending>
 
-@(exec/sh "echo" "hello")  ; To get a result, deref it.
+@(exec/sh ["echo" "hello"])  ; To get a result, deref it.
 ;=> {:exit 0, :out "hello\n", :err nil}
 
-(exec/sh "ls" "-l" {:dir "/"}) ; Last argument can be recognized as an option map.
+(exec/sh ["ls" "-l"] {:dir "/"}) ; Second argument is option map.
 ```
 
 options
@@ -28,12 +29,12 @@ options
 * **:shutdown** *(boolean)* destroys sub-processes when the VM exits.
 * **:as-success** *(int)* is regarded as sucess exit value.
 * **:as-successes** *(sequence)* are regarded as sucess exit values.
-* **:result-handler-fn** *(function)* A function, which will be called with promiss, in, out, err and option map, returns an instance which implements org.apache.commons.exec.ExecuteResultHandler. You have to close in, out, and err stream when sub-process is finished.
+* **:result-handler-fn** *(function)* A function, which will be called with promiss, in, out, err stream and option map, returns an instance which implements org.apache.commons.exec.ExecuteResultHandler. You have to close in, out, and err stream when sub-process is finished.
 
-If you want to have multiple processes piped to each other and/or custom input (stream or a string), you can try using **sh-pipe**. Syntax is like sh, except each command is a vector of strings :
+If you want to have multiple processes piped to each other and/or custom input (stream or a string), you can try using **sh-pipe**. Syntax is like sh :
 
 ```clojure
-(println (:out @(exec/sh-pipe ["ls" "-lart" "/usr"])))
+(-> (exec/sh-pipe ["ls" "-lart" "/usr"]) last deref :out println)
 ; total 244
 ; drwxr-xr-x  10 root root  4096 2011-10-12 07:26 local
 ; drwxr-xr-x  11 root root  4096 2011-10-28 17:52 .
@@ -48,15 +49,15 @@ If you want to have multiple processes piped to each other and/or custom input (
 ; drwxr-xr-x   2 root root 69632 2012-04-18 21:01 bin
 ; 
 ;=> nil
-@(exec/sh-pipe ["ls" "-lart" "/usr"] ["wc"])
+@(last (exec/sh-pipe ["ls" "-lart" "/usr"] ["wc"]))
 ;=> {:exit 0, :out "     12      90     592\n", :err ""}
-@(exec/sh-pipe ["ls" "-lart" "/usr"] ["wc"] ["wc"])
+@(last (exec/sh-pipe ["ls" "-lart" "/usr"] ["wc"] ["wc"]))
 ;=> {:exit 0, :out "      1       3      24\n", :err ""}
 (def s "the quick brown fox\njumps\nover\nthe lazy dog")
-@(exec/sh-pipe ["wc"] {:in s})
+@(last (exec/sh-pipe ["wc"] {:in s}))
 ;=> {:exit 0, :out "      4       9      44\n", :err ""}
-
 ```
+
 ## Installation
 Leiningen [org.clojars.hozumi/clj-commons-exec "1.0.0-SNAPSHOT"]
 
