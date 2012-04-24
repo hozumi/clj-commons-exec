@@ -163,8 +163,9 @@
         middle-stream-sets (reduce concat
                                    (for [_ (range (dec num-cmds))]
                                      (let [pos (java.io.PipedOutputStream.)
-                                           pis (java.io.PipedInputStream. pos)]
-                                       [[pos nil nil] [nil nil pis]])))
+                                           pis (java.io.PipedInputStream. pos)
+                                           err (java.io.ByteArrayOutputStream.)]
+                                       [[pos err nil] [nil nil pis]])))
         last-stream-set [out err nil]
         all-stream-sets (concat [first-stream-set] middle-stream-sets [last-stream-set])
         all-streams (map (fn [[set1 set2]] (map (fn [stream1 stream2] (or stream1 stream2)) set1 set2)) (partition 2 all-stream-sets)) 
@@ -175,5 +176,5 @@
                                      (assoc :in cmd-in))
                         sh-fn-args (concat cmd-and-args [new-opts])]
                     (apply sh sh-fn-args)))]
-    (last (doall
-           (map exec-fn cmds-list all-streams)))))
+    (doall
+     (map exec-fn cmds-list all-streams))))
