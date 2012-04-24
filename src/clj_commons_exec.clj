@@ -152,100 +152,6 @@
         (.execute executor command result-handler)))
     result))
 
-(defn- command-line [cmd-and-args]
-  "create a CommandLine object given a list/vector that has the base command and all the CLI arguments/options"
-  (let [base-command (first cmd-and-args)
-        cl (CommandLine. base-command)
-        args-opts (rest cmd-and-args)]
-    (doseq [ao args-opts]
-      (doto cl
-        (.addArgument ao)))
-    cl))
-
-(defn- run-pipe-2 [cmd-and-args1 cmd-and-args2]
-  "works for two commands, one piped to the second. each command a vector of strings. return a future that contains a map similar to the one contained in the sh function's return promise"
-  (let [result (promise)]
-    ;; putting result promise in outer let in case
-    ;; the inner let bindings can be GC'ed. this is premature optimization(?)
-    (let [cl1 (command-line cmd-and-args1)
-          cl2 (command-line cmd-and-args2)
-          pos (java.io.PipedOutputStream.)
-          pis (java.io.PipedInputStream. pos)
-          output (java.io.ByteArrayOutputStream.)
-          error (java.io.ByteArrayOutputStream.)          
-          exec1 (doto (DefaultExecutor.) (.setStreamHandler (PumpStreamHandler. pos nil nil)))
-          exec2 (doto (DefaultExecutor.) (.setStreamHandler (PumpStreamHandler. output error pis)))
-          t1-fn (fn [] (.execute exec1 cl1))
-          t2-fn (fn [] (deliver result
-                               (future (do
-                                         (let [exit-code (.execute exec2 cl2)]
-                                           {:exit exit-code
-                                            :out (.toString output)
-                                            :err (.toString error)})))))
-          t1 (Thread. t1-fn)
-          t2 (Thread. t2-fn)]
-      (.start t1)
-      (.start t2))
-    @result))
-
-(defn- run-in-str-1 [cmd-and-args in-str]
-  "feed the input string into the command. command specified as a vector of strings. return a future that contains a map similar to the one contained in the sh function's return promise"
-  (let [cl (command-line cmd-and-args)
-        output (java.io.ByteArrayOutputStream.)
-        error (java.io.ByteArrayOutputStream.)
-        input (string->input-stream (str in-str \newline))
-        exec (doto (DefaultExecutor.) (.setStreamHandler (PumpStreamHandler. output error input)))]
-    (future (do
-              (let [exit-code (.execute exec cl)]
-                {:exit exit-code
-                 :out (.toString output)
-                 :err (.toString error)})))))
-
-(defn run [cmd-and-args-list & [input]]
-  "run one or more commands, each command piped to the next if more than one. each command in the list specified as a vector of strings, the/all command string vector(s) enclosed inside one outer vector. return a future that contains a map similar to the one contained in the sh function's return promise"
-  (let [result (promise)]
-    ;; putting result promise in outer let in case
-    ;; the inner let bindings can be GC'ed. this is premature optimization(?)
-    (let [first-input (if (string? input) (string->input-stream (str input \newline)) input)
-          last-output (java.io.ByteArrayOutputStream.)
-          last-error (java.io.ByteArrayOutputStream.)
-          cmds (for [cmd-and-args cmd-and-args-list]
-                 (command-line cmd-and-args))
-          num-cmds (count cmds)
-          nil-streams (into []
-                            (for [_ (range num-cmds)]
-                              [nil nil nil]))
-          pipe-streams (loop [streams nil-streams
-                              i 0]
-                         (if (>= i (dec num-cmds))
-                           streams
-                           (let [pos (java.io.PipedOutputStream.)
-                                 pis (java.io.PipedInputStream. pos)
-                                 new-streams (-> streams
-                                                 (assoc-in [i 0] pos)
-                                                 (assoc-in [(inc i) 2] pis))]
-                             (recur new-streams (inc i)))))
-          all-streams (-> pipe-streams
-                          (assoc-in [0 2] first-input)
-                          (assoc-in [(dec num-cmds) 0] last-output)
-                          (assoc-in [(dec num-cmds) 1] last-error))
-          execs (for [cmd-streams all-streams]
-                  (doto (DefaultExecutor.) (.setStreamHandler (apply #(PumpStreamHandler. %1 %2 %3) cmd-streams))))
-          butlast-thread-fns (map (fn [exec cmd] (fn [] (.execute exec cmd))) (butlast execs) (butlast cmds))
-          last-thread-fn (fn [] (deliver result
-                                        (future (do
-                                                  (let [exit-code (.execute (last execs) (last cmds))]
-                                                    {:exit exit-code
-                                                     :out (.toString last-output)
-                                                     :err (.toString last-error)})))))
-          all-thread-fns (concat butlast-thread-fns [last-thread-fn])
-          threads (for [tfn all-thread-fns]
-                    (Thread. tfn))
-          ]
-      (doseq [t threads]
-        (.start t)))
-    @result))
-
 (defn sh-pipe [& args-and-opts]
   (let [[cmds-list [opts]] (parse-args-pipe args-and-opts)
         in  (when-let [i (:in opts)]
@@ -276,8 +182,6 @@
                                      (assoc :err cmd-err)
                                      (assoc :in cmd-in))
                         sh-fn-args (concat cmd-and-args [new-opts])]
-                    (apply sh sh-fn-args)))
-        ]
+                    (apply sh sh-fn-args)))]
     (last (doall
-           (map exec-fn cmds-list all-streams)))
-    ))
+           (map exec-fn cmds-list all-streams)))))
