@@ -111,14 +111,14 @@
              (try (.join t)
                   (catch InterruptedException _)))))))
 
-(defn string->input-stream [^String s & encode]
-  (ByteArrayInputStream. (.getBytes s (or ^String encode (System/getProperty "file.encoding")))))
+(defn string->input-stream [^String s & [^String encode]]
+  (ByteArrayInputStream. (.getBytes (str s \newline) (or encode (System/getProperty "file.encoding")))))
 
 (defn sh [& args-and-opts]
   (let [[[^String comm & args] [opts]] (parse-args args-and-opts)
         command (CommandLine. comm)
         in  (when-let [i (:in opts)]
-              (if (string? i) (string->input-stream (str i \newline) (:encode opts)) i))
+              (if (string? i) (string->input-stream i (:encode opts)) i))
         out (or (:out opts) (ByteArrayOutputStream.))
         err (or (:err opts) (ByteArrayOutputStream.))
         result (promise)
@@ -249,7 +249,7 @@
 (defn sh-pipe [& args-and-opts]
   (let [[cmds-list [opts]] (parse-args-pipe args-and-opts)
         in  (when-let [i (:in opts)]
-              (if (string? i) (string->input-stream (str i \newline) (:encode opts)) i))
+              (if (string? i) (string->input-stream i (:encode opts)) i))
         out (or (:out opts) (ByteArrayOutputStream.))
         err (or (:err opts) (ByteArrayOutputStream.))
         num-cmds (count cmds-list)
