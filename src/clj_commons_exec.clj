@@ -56,7 +56,7 @@
             {:exit (.getExitValue e)
              :out (convert-baos-into-x out (:encode opts))
              :err (convert-baos-into-x err (:encode opts))
-             :fail e})))
+             :exeption e})))
 
 ;; PumpStreamHandler flushes input stream only when input stream is System/in.
 ;; http://stackoverflow.com/questions/7113007/trouble-providing-multiple-input-to-a-command-using-apache-commons-exec-and-extr
