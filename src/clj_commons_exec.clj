@@ -6,7 +6,9 @@
             ByteArrayInputStream
             InputStream
             OutputStream
-            IOException]
+            IOException
+            PipedInputStream
+            PipedOutputStream]
            [org.apache.commons.exec
             CommandLine
             DefaultExecutor
@@ -17,12 +19,16 @@
             StreamPumper
             InputStreamPumper
             ShutdownHookProcessDestroyer
-            Watchdog]
+            Watchdog
+            PumpStreamHandler]
            [org.apache.commons.exec.environment
             EnvironmentUtils]))
 
 (defn parse-args [args]
   (split-with string? args))
+
+(defn parse-args-pipe [args]
+  (split-with sequential? args))
 
 (deftest parse-args-test
   (is (= [["ls" "-l"] {:dir "foo"}]
@@ -105,8 +111,8 @@
              (try (.join t)
                   (catch InterruptedException _)))))))
 
-(defn string->input-stream [^String s ^String encode]
-  (ByteArrayInputStream. (.getBytes s (or encode (System/getProperty "file.encoding")))))
+(defn string->input-stream [^String s & [^String encode]]
+  (ByteArrayInputStream. (.getBytes (str s \newline) (or encode (System/getProperty "file.encoding")))))
 
 (defn sh [& args-and-opts]
   (let [[[^String comm & args] [opts]] (parse-args args-and-opts)
@@ -121,6 +127,7 @@
         ((or (:result-handler-fn opts) ->DefaultResultHandler) result in out err opts)
 
         stream-handler (flush-pump-stream-handler out err in (:flush-input? opts))
+        stream-handler (PumpStreamHandler. out err in)
         executor (DefaultExecutor.)]
     (doseq [arg args]
       (.addArgument command arg))
@@ -144,3 +151,30 @@
           (.execute executor command env result-handler))
         (.execute executor command result-handler)))
     result))
+
+(defn sh-pipe [& args-and-opts]
+  (let [[cmds-list [opts]] (parse-args-pipe args-and-opts)
+        in  (when-let [i (:in opts)]
+              (if (string? i) (string->input-stream i (:encode opts)) i))
+        out (or (:out opts) (ByteArrayOutputStream.))
+        err (or (:err opts) (ByteArrayOutputStream.))
+        num-cmds (count cmds-list)
+        first-stream-set [nil nil in]
+        middle-stream-sets (reduce concat
+                                   (for [_ (range (dec num-cmds))]
+                                     (let [pos (java.io.PipedOutputStream.)
+                                           pis (java.io.PipedInputStream. pos)
+                                           err (java.io.ByteArrayOutputStream.)]
+                                       [[pos err nil] [nil nil pis]])))
+        last-stream-set [out err nil]
+        all-stream-sets (concat [first-stream-set] middle-stream-sets [last-stream-set])
+        all-streams (map (fn [[set1 set2]] (map (fn [stream1 stream2] (or stream1 stream2)) set1 set2)) (partition 2 all-stream-sets)) 
+        exec-fn (fn [cmd-and-args [cmd-out cmd-err cmd-in]]
+                  (let [new-opts (-> opts
+                                     (assoc :out cmd-out)
+                                     (assoc :err cmd-err)
+                                     (assoc :in cmd-in))
+                        sh-fn-args (concat cmd-and-args [new-opts])]
+                    (apply sh sh-fn-args)))]
+    (doall
+     (map exec-fn cmds-list all-streams))))
