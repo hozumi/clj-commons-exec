@@ -148,13 +148,11 @@
   (let [[cmds-list [opts]] (parse-args-pipe args-and-opts)
         first-in (when-let [in (:in opts)]
                    (if (string? in) (string->input-stream in (:encode opts)) in))
-        last-out (or (:out opts) (ByteArrayOutputStream.))
-        last-err (or (:err opts) (ByteArrayOutputStream.))
-        num-cmds (count cmds-list)
-        pouts (repeatedly (dec num-cmds) #(PipedOutputStream.))
+        num-cmds-1 (-> cmds-list count dec)
+        pouts (repeatedly num-cmds-1 #(PipedOutputStream.))
         pins (map (fn [pos] (PipedInputStream. pos)) pouts)
-        outs (concat pouts [last-out])
-        errs (concat (repeat (dec num-cmds) nil) [last-err])
+        outs (concat pouts [(:out opts)])
+        errs (concat (repeat num-cmds-1 nil) [(:err opts)])
         ins (cons first-in pins)
         opts-list (map (fn [in out err] (assoc opts :in in :out out :err err))
                        ins outs errs)]
