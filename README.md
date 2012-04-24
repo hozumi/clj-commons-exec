@@ -59,7 +59,7 @@ If you want to have multiple processes piped to each other and/or custom input (
 ```
 
 ## Installation
-Leiningen [org.clojars.hozumi/clj-commons-exec "1.0.0-SNAPSHOT"]
+Leiningen [org.clojars.hozumi/clj-commons-exec "1.0.0"]
 
 ## License
 
