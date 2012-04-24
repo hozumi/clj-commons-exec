@@ -159,23 +159,15 @@
         out (or (:out opts) (ByteArrayOutputStream.))
         err (or (:err opts) (ByteArrayOutputStream.))
         num-cmds (count cmds-list)
-        nil-streams (into []
-                          (for [_ (range num-cmds)]
-                            [nil nil nil]))
-        pipe-streams (loop [streams nil-streams
-                            i 0]
-                       (if (>= i (dec num-cmds))
-                         streams
-                         (let [pos (java.io.PipedOutputStream.)
-                               pis (java.io.PipedInputStream. pos)
-                               new-streams (-> streams
-                                               (assoc-in [i 0] pos)
-                                               (assoc-in [(inc i) 2] pis))]
-                           (recur new-streams (inc i)))))
-        all-streams (-> pipe-streams
-                        (assoc-in [0 2] in)
-                        (assoc-in [(dec num-cmds) 0] out)
-                        (assoc-in [(dec num-cmds) 1] err))
+        first-stream-set [nil nil in]
+        middle-stream-sets (reduce concat
+                                   (for [_ (range (dec num-cmds))]
+                                     (let [pos (java.io.PipedOutputStream.)
+                                           pis (java.io.PipedInputStream. pos)]
+                                       [[pos nil nil] [nil nil pis]])))
+        last-stream-set [out err nil]
+        all-stream-sets (concat [first-stream-set] middle-stream-sets [last-stream-set])
+        all-streams (map (fn [[set1 set2]] (map (fn [stream1 stream2] (or stream1 stream2)) set1 set2)) (partition 2 all-stream-sets)) 
         exec-fn (fn [cmd-and-args [cmd-out cmd-err cmd-in]]
                   (let [new-opts (-> opts
                                      (assoc :out cmd-out)
