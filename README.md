@@ -74,7 +74,7 @@ Note: Commands that are waiting for piped input downstream of any such error mig
 ```
 
 ## Installation
-Leiningen [org.clojars.hozumi/clj-commons-exec "1.0.1"]
+Leiningen [org.clojars.hozumi/clj-commons-exec "1.0.2"]
 
 ## License
 
