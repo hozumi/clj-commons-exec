@@ -81,13 +81,13 @@
       (setProcessOutputStream
         [_ is] ;;InputStream
         (when out
-          (let [t (Thread. (StreamPumper. is out false))]
+          (let [t (Thread. (StreamPumper. is out true))]
             (swap! threads conj t)
             (.setDaemon t true))))
       (setProcessErrorStream
         [_ is] ;;InputStream
         (when err
-          (let [t (Thread. (StreamPumper. is err false))]
+          (let [t (Thread. (StreamPumper. is err true))]
             (swap! threads conj t)
             (.setDaemon t true))))
       (setProcessInputStream
