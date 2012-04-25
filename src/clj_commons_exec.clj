@@ -57,20 +57,17 @@
              :err (convert-baos-into-x err (:encode opts))
              :exception e})))
 
-(defrecord FlushStreamPumper [is os]
+(defrecord FlushStreamPumper [^InputStream is ^OutputStream os]
   Runnable
   (run [_]
-    (let [^OutputStream os os
-          buf-size 1024
-          buf (byte-array buf-size)]
-      (loop []
-        (let [load-size (.read ^InputStream is buf)]
-          (.write os buf 0 load-size)
-          (.flush os)
-          (if (= buf-size load-size)
-            (recur)
-            (try (.close os)
-                 (catch IOException _))))))))
+    (loop []
+      (let [b (.read is)]
+        (if (< 0 b)
+          (do (.write os b)
+              (.flush os)
+              (recur))
+          (try (.close os)
+               (catch IOException _)))))))
 
 ;; PumpStreamHandler flushes input stream only when input stream is System/in.
 ;; http://stackoverflow.com/questions/7113007/trouble-providing-multiple-input-to-a-command-using-apache-commons-exec-and-extr
