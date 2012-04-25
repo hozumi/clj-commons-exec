@@ -29,9 +29,9 @@ options
 * **:shutdown** *(boolean)* destroys sub-processes when the VM exits.
 * **:as-success** *(int)* is regarded as sucess exit value.
 * **:as-successes** *(sequence)* are regarded as sucess exit values.
-* **:result-handler-fn** *(function)* A function, which will be called with promiss, in, out, err stream and option map, returns an instance which implements org.apache.commons.exec.ExecuteResultHandler. You have to close in, out, and err stream when sub-process is finished.
+* **:result-handler-fn** *(function)* A function, which will be called with promise, in, out, err stream and option map, returns an instance which implements org.apache.commons.exec.ExecuteResultHandler. You have to close in, out, and err stream when sub-process is finished.
 
-If you want to have multiple processes piped to each other and/or custom input (stream or a string), you can try using **sh-pipe**. Syntax is like sh :
+If you want to have multiple processes piped to each other, you can use **sh-pipe**. Syntax is like sh :
 
 ```clojure
 (-> (exec/sh-pipe ["ls" "-lart" "/usr"]) last deref :out println)
@@ -56,6 +56,21 @@ If you want to have multiple processes piped to each other and/or custom input (
 (def s "the quick brown fox\njumps\nover\nthe lazy dog")
 @(last (exec/sh-pipe ["wc"] {:in s}))
 ;=> {:exit 0, :out "      4       9      44\n", :err ""}
+```
+
+When piping commands using sh-pipe, the first command that does not exit successfully will additionally have the :exception key (and corresponding Exception) delivered in its result map:
+```clojure
+@(first (exec/sh-pipe ["sleep" "6"] {:watchdog 4000}))
+;=> {:exit 143, :out nil, :err nil, :exception #<ExecuteException org.apache.commons.exec.ExecuteException: Process exited with an error: 143 (Exit value: 143)>}
+@(first (exec/sh-pipe ["ls" "-blerg"] ["wc"] ["wc"]))
+;=> {:exit 2, :out nil, :err "ls: invalid option -- 'e'\nTry `ls --help' for more information.\n", :exception #<ExecuteException org.apache.commons.exec.ExecuteException: Process exited with an error: 2 (Exit value: 2)>}
+```
+Note: Commands that are waiting for piped input downstream of any such error might receive an empty stream.  Most likely, they will finish execution, but their output will be logically incorrect.
+```clojure
+@(nth (exec/sh-pipe ["ls" "-blerg"] ["wc"] ["wc"]) 1)
+;=> {:exit 0, :out nil, :err nil}
+@(last (exec/sh-pipe ["ls" "-blerg"] ["wc"] ["wc"]))
+;=> {:exit 0, :out "      1       3      24\n", :err nil}
 ```
 
 ## Installation
