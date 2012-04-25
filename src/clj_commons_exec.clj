@@ -55,7 +55,7 @@
             {:exit (.getExitValue e)
              :out (convert-baos-into-x out (:encode opts))
              :err (convert-baos-into-x err (:encode opts))
-             :exeption e})))
+             :exception e})))
 
 (defrecord FlushStreamPumper [is os]
   Runnable
