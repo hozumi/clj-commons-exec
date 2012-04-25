@@ -17,7 +17,6 @@
             ExecuteWatchdog
             ExecuteStreamHandler
             StreamPumper
-            InputStreamPumper
             ShutdownHookProcessDestroyer
             Watchdog
             PumpStreamHandler]
@@ -58,33 +57,47 @@
              :err (convert-baos-into-x err (:encode opts))
              :exeption e})))
 
+(defrecord FlushStreamPumper [is os]
+  Runnable
+  (run [_]
+    (let [^OutputStream os os
+          buf-size 1024
+          buf (byte-array buf-size)]
+      (loop []
+        (let [load-size (.read ^InputStream is buf)]
+          (.write os buf 0 load-size)
+          (.flush os)
+          (if (= buf-size load-size)
+            (recur)
+            (try (.close os)
+                 (catch IOException _))))))))
+
 ;; PumpStreamHandler flushes input stream only when input stream is System/in.
 ;; http://stackoverflow.com/questions/7113007/trouble-providing-multiple-input-to-a-command-using-apache-commons-exec-and-extr
 ;; ported from http://svn.apache.org/viewvc/commons/proper/exec/tags/EXEC_1_1/src/main/java/org/apache/commons/exec/PumpStreamHandler.java?view=markup
 ;; and add flush-input? option.
 (defn flush-pump-stream-handler
   [^InputStream in ^OutputStream out ^OutputStream err flush-input?]
-  (let [threads (atom [])
-        isp (atom nil)]
+  (let [threads (atom [])]
     (reify
       ExecuteStreamHandler
       (setProcessOutputStream
         [_ is] ;;InputStream
         (when out
-          (let [t (Thread. (StreamPumper. is out))]
+          (let [t (Thread. (StreamPumper. is out false))]
             (swap! threads conj t)
             (.setDaemon t true))))
       (setProcessErrorStream
         [_ is] ;;InputStream
         (when err
-          (let [t (Thread. (StreamPumper. is err))]
+          (let [t (Thread. (StreamPumper. is err false))]
             (swap! threads conj t)
             (.setDaemon t true))))
       (setProcessInputStream
         [_ os] ;;OutputStream
         (if in
           (let [pumper (if flush-input?
-                         (reset! isp (InputStreamPumper. in os))
+                         (FlushStreamPumper. in os)
                          (StreamPumper. in os true))
                 t (Thread. pumper)]
             (swap! threads conj t)
@@ -94,8 +107,6 @@
       (start [_]
         (doseq [t @threads] (.start t)))
       (stop [_]
-        (when @isp
-          (.stopProcessing @isp))
         (doseq [^Thread t @threads]
           (try (.join t)
                (catch InterruptedException _)))
