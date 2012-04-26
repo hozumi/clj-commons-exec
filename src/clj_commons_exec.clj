@@ -115,6 +115,7 @@
 
 (defn sh [[^String comm & args] & [opts]]
   (let [command (CommandLine. comm)
+        handle-quoting? (-> opts :handle-quoting? boolean)
         in  (when-let [in (:in opts)]
               (if (string? in) (string->input-stream in (:encode opts)) in))
         out (or (:out opts) (ByteArrayOutputStream.))
@@ -127,7 +128,7 @@
         stream-handler (flush-pump-stream-handler in out err (:flush-input? opts))
         executor (DefaultExecutor.)]
     (doseq [arg args]
-      (.addArgument command arg))
+      (.addArgument command arg handle-quoting?))
     (when-let [dir (:dir opts)]
       (.setWorkingDirectory executor (javaio/file dir)))
     (when-let [success (:as-success opts)]

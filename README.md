@@ -23,6 +23,7 @@ options
 * **:out** *(OutputStream)* is used as the sub-process's stdout.
 * **:flush-input?** *(boolean)* flush or not input stream.
 * **:err** *(OutputStream)* is used as the sub-process's stderror.
+* **:handle-quoting? Add the argument with/without handling quoting.
 * **:watchdog** *(int)* set watchdog timer in ms.
 * **:env** *(Map)* The environment for the new process. If null, the environment of the current process is used.
 * **:add-env** *(Map)* The added environment for the new process.
