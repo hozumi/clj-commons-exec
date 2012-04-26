@@ -96,13 +96,13 @@
           (let [pumper (if flush-input?
                          (FlushStreamPumper. in os)
                          (StreamPumper. in os true))
-                t (Thread. pumper)]
+                t (Thread. ^Runnable pumper)]
             (swap! threads conj t)
             (.setDaemon t true))
           (try (.close os)
                (catch IOException e))))
       (start [_]
-        (doseq [t @threads] (.start t)))
+        (doseq [^Thread t @threads] (.start t)))
       (stop [_]
         (doseq [^Thread t @threads]
           (try (.join t)
@@ -159,7 +159,7 @@
                    (if (string? in) (string->input-stream in (:encode opts)) in))
         num-cmds-1 (-> cmds-list count dec)
         pouts (repeatedly num-cmds-1 #(PipedOutputStream.))
-        pins (map (fn [pos] (PipedInputStream. pos)) pouts)
+        pins (map (fn [^PipedOutputStream pos] (PipedInputStream. pos)) pouts)
         outs (concat pouts [(:out opts)])
         errs (concat (repeat num-cmds-1 nil) [(:err opts)])
         ins (cons first-in pins)
