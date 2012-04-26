@@ -19,11 +19,11 @@
 options
 
 * **:dir** *(String or java.io.File)* override the process dir.
-* **:in** *(String or InputStream)* is fed to the sub-process's stdin.
 * **:out** *(OutputStream)* is used as the sub-process's stdout.
-* **:flush-input?** *(boolean)* flush or not input stream.
 * **:err** *(OutputStream)* is used as the sub-process's stderror.
-* **:handle-quoting? Add the argument with/without handling quoting.
+* **:in** *(String or InputStream)* is fed to the sub-process's stdin.
+* **:flush-input?** *(boolean)* flush or not input stream.
+* **:handle-quoting?** *(boolean)* Add the argument with/without handling quoting.
 * **:watchdog** *(int)* set watchdog timer in ms.
 * **:env** *(Map)* The environment for the new process. If null, the environment of the current process is used.
 * **:add-env** *(Map)* The added environment for the new process.
@@ -45,7 +45,8 @@ When piping commands using sh-pipe, the first command that does not exit success
 ;=> (#<Promise@563da1dc:
 ;     {:exit 1, :out nil,
 ;      :err "cat: abc.txt: No such file or directory\n",
-;      :exception #<ExecuteException org.apache.commons.exec.ExecuteException: Process exited with an error: 1 (Exit value: 1)>}>
+;      :exception #<ExecuteException org.apache.commons.exec.ExecuteException:
+;                   Process exited with an error: 1 (Exit value: 1)>}>
 ;    #<Promise@7bff88c3:
 ;     {:exit 0, :out "       0       0       0\n", :err nil}>)
 ```
