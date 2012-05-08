@@ -166,3 +166,8 @@
                        ins outs errs)]
     (doall
      (map sh cmds-list opts-list))))
+
+(defn env
+  "return a map of environment variables and their values, all as strings"
+  []
+  (into {} (EnvironmentUtils/getProcEnvironment)))
