@@ -155,14 +155,12 @@
 
 (defn sh-pipe [& args-and-opts]
   (let [[cmds-list [opts]] (parse-args-pipe args-and-opts)
-        first-in (when-let [in (:in opts)]
-                   (if (string? in) (string->input-stream in (:encode opts)) in))
         num-cmds-1 (-> cmds-list count dec)
         pouts (repeatedly num-cmds-1 #(PipedOutputStream.))
         pins (map (fn [^PipedOutputStream pos] (PipedInputStream. pos)) pouts)
         outs (concat pouts [(:out opts)])
         errs (concat (repeat num-cmds-1 nil) [(:err opts)])
-        ins (cons first-in pins)
+        ins (cons (:in opts) pins)
         opts-list (map (fn [in out err] (assoc opts :in in :out out :err err))
                        ins outs errs)]
     (doall
