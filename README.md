@@ -53,7 +53,7 @@ When piping commands using sh-pipe, the first command that does not exit success
 Note: Commands that are waiting for piped input downstream of any such error might receive an empty stream.  Most likely, they will finish execution, but their output will be logically incorrect.
 
 ## Installation
-Leiningen [org.clojars.hozumi/clj-commons-exec "1.0.5"]
+Leiningen [org.clojars.hozumi/clj-commons-exec "1.0.6"]
 
 ## License
 
