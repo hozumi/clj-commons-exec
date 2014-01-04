@@ -1,6 +1,7 @@
 (ns clj-commons-exec.test.core
   (:require [clj-commons-exec :as exec])
-  (:use [clojure.test]))
+  (:use [clojure.test])
+  (:import [org.apache.commons.exec ExecuteWatchdog]))
 
 (deftest test-sh
   (is (= @(exec/sh ["cat"] {:in "hello world"})
@@ -12,6 +13,16 @@
   (let [{:keys [exit exception]} @(exec/sh ["sleep" "1"] {:watchdog 100})]
     (is (= 143 exit))
     (is exception)))
+
+(deftest test-sh-with-explicit-watchdog-and-termination
+  (let [watchdog (ExecuteWatchdog. ExecuteWatchdog/INFINITE_TIMEOUT)
+        promise-exec (exec/sh ["sleep" "2"] {:watchdog watchdog})] 
+    (is (not (realized? promise-exec)))
+    (is (.isWatching watchdog))
+    (.destroyProcess watchdog)
+    (let [{:keys [exit exception]} @promise-exec]
+      (is (= 143 exit))
+      (is exception))))
 
 (deftest test-sh-pipe
   (is (= (map deref (exec/sh-pipe ["echo" "hello world"] ["cat"]))

@@ -113,6 +113,9 @@
 (defn string->input-stream [^String s & [^String encode]]
   (ByteArrayInputStream. (.getBytes s (or encode (System/getProperty "file.encoding")))))
 
+
+(ExecuteWatchdog. ExecuteWatchdog/INFINITE_TIMEOUT)
+
 (defn sh [[^String comm & args] & [opts]]
   (let [command (CommandLine. comm)
         handle-quoting? (-> opts :handle-quoting? boolean)
@@ -135,8 +138,10 @@
       (.setExitValue executor success))
     (when-let [successes (:as-successes opts)]
       (.setExitValues executor (into-array Integer/TYPE successes)))
-    (when-let [ms (:watchdog opts)]
-      (.setWatchdog executor (ExecuteWatchdog. ms)))
+    (when-let [watchdog-value (:watchdog opts)]
+      (.setWatchdog executor 
+                    (cond (instance? ExecuteWatchdog watchdog-value) watchdog-value
+                          :else (ExecuteWatchdog. watchdog-value))))
     (when (:shutdown opts)
       (.setProcessDestroyer executor (ShutdownHookProcessDestroyer.)))
     (.setStreamHandler executor stream-handler)
