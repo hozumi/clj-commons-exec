@@ -135,8 +135,10 @@
       (.setExitValue executor success))
     (when-let [successes (:as-successes opts)]
       (.setExitValues executor (into-array Integer/TYPE successes)))
-    (when-let [ms (:watchdog opts)]
-      (.setWatchdog executor (ExecuteWatchdog. ms)))
+    (when-let [watchdog-value (:watchdog opts)]
+      (.setWatchdog executor 
+                    (cond (instance? ExecuteWatchdog watchdog-value) watchdog-value
+                          :else (ExecuteWatchdog. watchdog-value))))
     (when (:shutdown opts)
       (.setProcessDestroyer executor (ShutdownHookProcessDestroyer.)))
     (.setStreamHandler executor stream-handler)

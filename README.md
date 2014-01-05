@@ -24,7 +24,7 @@ options
 * **:in** *(String or InputStream)* is fed to the sub-process's stdin.
 * **:flush-input?** *(boolean)* flush or not input stream.
 * **:handle-quoting?** *(boolean)* Add the argument with/without handling quoting.
-* **:watchdog** *(int)* set watchdog timer in ms.
+* **:watchdog** (*int* or instance of *ExecuteWatchdog*) set watchdog timer in ms.
 * **:env** *(Map)* The environment for the new process. If null, the environment of the current process is used.
 * **:add-env** *(Map)* The added environment for the new process.
 * **:shutdown** *(boolean)* destroys sub-processes when the VM exits.
