@@ -113,9 +113,6 @@
 (defn string->input-stream [^String s & [^String encode]]
   (ByteArrayInputStream. (.getBytes s (or encode (System/getProperty "file.encoding")))))
 
-
-(ExecuteWatchdog. ExecuteWatchdog/INFINITE_TIMEOUT)
-
 (defn sh [[^String comm & args] & [opts]]
   (let [command (CommandLine. comm)
         handle-quoting? (-> opts :handle-quoting? boolean)
