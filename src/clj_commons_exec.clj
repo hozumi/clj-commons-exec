@@ -1,6 +1,5 @@
 (ns clj-commons-exec
   (:require [clojure.java.io :as javaio :only [file]])
-  (:use [clojure.test])
   (:import [java.io
             ByteArrayOutputStream
             ByteArrayInputStream
