@@ -30,26 +30,22 @@
             (string? enc)  (String. b enc)
             :else (String. b (System/getProperty "file.encoding"))))))
 
-(defn close-all [^InputStream in
-                 ^OutputStream out
-                 ^OutputStream err]
-  (when in
-    (.close in))
-  (.close out)
-  (.close err))
-
 (defrecord DefaultResultHandler [result in out err opts]
   ExecuteResultHandler
   (onProcessComplete
    [_ exit-value]
-   (close-all in out err)
+   (when (and in (:close-in? opts)) (.close ^InputStream in))
+   (when (and out (:close-out? opts)) (.close ^OutputStream out))
+   (when (and err (:close-err? opts)) (.close ^OutputStream err))
    (deliver result
             {:exit exit-value
              :out (convert-baos-into-x out (:encode opts))
              :err (convert-baos-into-x err (:encode opts))}))
   (onProcessFailed
    [_ e]
-   (close-all in out err)
+   (when (and in (:close-in? opts)) (.close ^InputStream in))
+   (when (and out (:close-out? opts)) (.close ^OutputStream out))
+   (when (and err (:close-err? opts)) (.close ^OutputStream err))
    (deliver result
             {:exit (.getExitValue e)
              :out (convert-baos-into-x out (:encode opts))
@@ -73,26 +69,26 @@
 ;; ported from http://svn.apache.org/viewvc/commons/proper/exec/tags/EXEC_1_1/src/main/java/org/apache/commons/exec/PumpStreamHandler.java?view=markup
 ;; and add flush-input? option.
 (defn flush-pump-stream-handler
-  [^InputStream in ^OutputStream out ^OutputStream err flush-input?]
+  [^InputStream in ^OutputStream out ^OutputStream err opts]
   (let [threads (atom [])]
     (reify
       ExecuteStreamHandler
       (setProcessOutputStream
         [_ is] ;;InputStream
         (when out
-          (let [t (Thread. (StreamPumper. is out true))]
+          (let [t (Thread. (StreamPumper. is out (boolean (:close-out? opts))))]
             (swap! threads conj t)
             (.setDaemon t true))))
       (setProcessErrorStream
         [_ is] ;;InputStream
         (when err
-          (let [t (Thread. (StreamPumper. is err true))]
+          (let [t (Thread. (StreamPumper. is err (boolean (:close-err? opts))))]
             (swap! threads conj t)
             (.setDaemon t true))))
       (setProcessInputStream
         [_ os] ;;OutputStream
         (if in
-          (let [pumper (if flush-input?
+          (let [pumper (if (:flush-input? opts)
                          (FlushStreamPumper. in os)
                          (StreamPumper. in os true))
                 t (Thread. ^Runnable pumper)]
@@ -119,12 +115,16 @@
               (if (string? in) (string->input-stream in (:encode opts)) in))
         out (or (:out opts) (ByteArrayOutputStream.))
         err (or (:err opts) (ByteArrayOutputStream.))
+        opts (let [{:keys [close-in? close-out? close-err?]} opts]
+               (assoc opts :close-in? (if (:in opts) close-in? false)
+                      :close-out? (if (:out opts) close-out? true)
+                      :close-err? (if (:err opts) close-err? true)))
         result (promise)
 
         ^ExecuteResultHandler result-handler
         ((or (:result-handler-fn opts) ->DefaultResultHandler) result in out err opts)
 
-        stream-handler (flush-pump-stream-handler in out err (:flush-input? opts))
+        stream-handler (flush-pump-stream-handler in out err opts)
         executor (DefaultExecutor.)]
     (doseq [arg args]
       (.addArgument command arg handle-quoting?))
@@ -162,7 +162,12 @@
         outs (concat pouts [(:out opts)])
         errs (concat (repeat num-cmds-1 nil) [(:err opts)])
         ins (cons (:in opts) pins)
-        opts-list (map (fn [in out err] (assoc opts :in in :out out :err err))
-                       ins outs errs)]
+        close-out?s (concat (repeat num-cmds-1 true) [(:close-out? opts)])
+        close-err?s (concat (repeat num-cmds-1 true) [(:close-err? opts)])
+        close-in?s (cons (:close-in? opts) (repeat num-cmds-1 true))
+        opts-list (map (fn [in out err close-in? close-out? close-err?]
+                         (assoc opts :in in :out out :err err :close-in? close-in?
+                                :close-out? close-out? :close-err? close-err?))
+                       ins outs errs close-in?s close-out?s close-err?s)]
     (doall
      (map sh cmds-list opts-list))))
