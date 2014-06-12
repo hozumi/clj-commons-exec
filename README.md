@@ -22,6 +22,9 @@ options
 * **:out** *(OutputStream)* is used as the sub-process's stdout.
 * **:err** *(OutputStream)* is used as the sub-process's stderror.
 * **:in** *(String or InputStream)* is fed to the sub-process's stdin.
+* **:close-out?** *(boolean)* close or not a stream of stdout when sub-process complete. Default is false.
+* **:close-err?** *(boolean)*
+* **:close-in?** *(boolean)*
 * **:flush-input?** *(boolean)* flush or not input stream.
 * **:handle-quoting?** *(boolean)* Add the argument with/without handling quoting.
 * **:watchdog** (*int* or instance of *ExecuteWatchdog*) set watchdog timer in ms.
@@ -30,7 +33,7 @@ options
 * **:shutdown** *(boolean)* destroys sub-processes when the VM exits.
 * **:as-success** *(int)* is regarded as sucess exit value.
 * **:as-successes** *(sequence)* are regarded as sucess exit values.
-* **:result-handler-fn** *(function)* A function, which will be called with promise, in, out, err stream and option map, returns an instance which implements org.apache.commons.exec.ExecuteResultHandler. You have to close in, out, and err stream when sub-process is finished.
+* **:result-handler-fn** *(function)* A function, which will be called with promise, in, out, err stream and option map, returns an instance which implements org.apache.commons.exec.ExecuteResultHandler.
 
 If you want to have multiple processes piped to each other, you can use **sh-pipe**. Syntax is like sh :
 ```clojure
