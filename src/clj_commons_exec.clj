@@ -68,7 +68,7 @@
 ;; http://stackoverflow.com/questions/7113007/trouble-providing-multiple-input-to-a-command-using-apache-commons-exec-and-extr
 ;; ported from http://svn.apache.org/viewvc/commons/proper/exec/tags/EXEC_1_1/src/main/java/org/apache/commons/exec/PumpStreamHandler.java?view=markup
 ;; and add flush-input? option.
-(defn flush-pump-stream-handler
+(defn pump-stream-handler
   [^InputStream in ^OutputStream out ^OutputStream err opts]
   (let [threads (atom [])]
     (reify
@@ -124,7 +124,7 @@
         ^ExecuteResultHandler result-handler
         ((or (:result-handler-fn opts) ->DefaultResultHandler) result in out err opts)
 
-        stream-handler (flush-pump-stream-handler in out err opts)
+        stream-handler (pump-stream-handler in out err opts)
         executor (DefaultExecutor.)]
     (doseq [arg args]
       (.addArgument command arg handle-quoting?))
