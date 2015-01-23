@@ -34,23 +34,27 @@
   ExecuteResultHandler
   (onProcessComplete
    [_ exit-value]
-   (when (and in (:close-in? opts)) (.close ^InputStream in))
-   (when (and out (:close-out? opts)) (.close ^OutputStream out))
-   (when (and err (:close-err? opts)) (.close ^OutputStream err))
-   (deliver result
-            {:exit exit-value
-             :out (convert-baos-into-x out (:encode opts))
-             :err (convert-baos-into-x err (:encode opts))}))
+   (try
+     (when (and in (:close-in? opts)) (.close ^InputStream in))
+     (when (and out (:close-out? opts)) (.close ^OutputStream out))
+     (when (and err (:close-err? opts)) (.close ^OutputStream err))
+     (finally 
+       (deliver result
+                {:exit exit-value
+                 :out (convert-baos-into-x out (:encode opts))
+                 :err (convert-baos-into-x err (:encode opts))}))))
   (onProcessFailed
    [_ e]
-   (when (and in (:close-in? opts)) (.close ^InputStream in))
-   (when (and out (:close-out? opts)) (.close ^OutputStream out))
-   (when (and err (:close-err? opts)) (.close ^OutputStream err))
-   (deliver result
-            {:exit (.getExitValue e)
-             :out (convert-baos-into-x out (:encode opts))
-             :err (convert-baos-into-x err (:encode opts))
-             :exception e})))
+   (try
+     (when (and in (:close-in? opts)) (.close ^InputStream in))
+     (when (and out (:close-out? opts)) (.close ^OutputStream out))
+     (when (and err (:close-err? opts)) (.close ^OutputStream err))
+     (finally
+       (deliver result
+                {:exit (.getExitValue e)
+                 :out (convert-baos-into-x out (:encode opts))
+                 :err (convert-baos-into-x err (:encode opts))
+                 :exception e})))))
 
 (defrecord FlushStreamPumper [^InputStream is ^OutputStream os]
   Runnable
